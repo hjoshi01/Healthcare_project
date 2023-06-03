@@ -1,0 +1,153 @@
+---
+title: "Linear_Model"
+author: "Shweta Rane"
+date: "2022-11-27"
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+#This file contains HMO data with outcome variable "expensive" derived using K-means
+library(tidyverse)
+file <- ("https://intro-datascience.s3.us-east-2.amazonaws.com/HMO_data.csv")
+data <- read_csv(file)
+head(data)
+```
+```{r}
+#install.packages("imputeTS")
+library(imputeTS)
+data$bmi <- na.interpolation(data$bmi)
+#View(HMO_data)
+sum(is.na(data$bmi))
+
+data$hypertension <- na.interpolation(data$hypertension)
+#View(HMO_data)
+sum(is.na(data$hypertension))
+```
+```{r}
+data <- data.frame(X=as.integer(data$X),
+                     age=as.integer(data$age),
+                     bmi=as.integer(data$bmi),
+                     children=as.integer(data$children),
+                     smoker=as.integer(ifelse(data$smoker == 'yes',1,0)),
+                     location=as.integer(unclass(as.factor(data$location))),
+                     location_type=as.integer(ifelse(data$location_type == 'Country',1,0)),
+                     education_level=as.integer(unclass(as.factor(data$education_level))),
+                     yearly_physical=as.integer(ifelse(data$yearly_physical == 'Yes',1,0)),
+                     exercise=as.integer(ifelse(data$exercise == 'Active',1,0)),
+                     married=as.integer(ifelse(data$married == 'Married',1,0)),
+                     hypertension = as.integer(data$hypertension),
+                     gender=as.integer(ifelse(data$gender == 'male',1,0)),
+                     cost=as.integer(data$cost))
+                     
+```
+
+
+```{r}
+str(data)
+```
+
+
+```{r}
+# install.packages('corrplot')
+library(corrplot)
+corrmatrix <- cor(data)
+
+corrplot(cor(corrmatrix),addCoef.col="black",number.cex=0.30)
+```
+
+
+
+```{r}
+
+plot_1 <- ggplot(data=data) + aes(y=cost, x=age) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)  #giving a line of best fit to the scatter plot
+
+plot_2 <- ggplot(data=data) + aes(y=cost, x=bmi) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)
+
+
+plot_3 <- ggplot(data=data) + aes(y=cost, x=children) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)
+
+plot_4 <- ggplot(data=data) + aes(y=cost, x=hypertension) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)
+
+plot_5 <- ggplot(data=data) + aes(y=cost, x=smoker) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)
+
+
+plot_1
+plot_2
+plot_3
+plot_4
+plot_5
+
+
+```
+
+
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi, smoker, age, children, location, location_type, education_level, exercise, married, hypertension, gender, yearly_physical, id
+lmOut1 <- lm(formula = cost ~ bmi + age + smoker + children +location + location_type + exercise + married + hypertension + gender + education_level + yearly_physical, data = data)
+summary(lmOut1)
+```
+```{r}
+# the adjusted R-squared value is tells us that 57.28% of variations in the dependent variable cost is predicted by all the independent variables taken in lmOut1
+
+# the significant variables are bmi, age, smoker, children, exercise and hypertension
+```
+
+```{r}
+
+#Applied linear regression on outcome variable cost using predictors bmi, smoker, age, children,exercise, hypertension 
+lmOut2 <- lm(formula = cost ~ bmi + age + smoker + children + exercise  + hypertension , data = data)
+summary(lmOut2)
+```
+```{r}
+#this linear regression was modelled on taking the significant variables from lmOut1. The results are still the same
+```
+
+```{r}
+#Applied linear regression on outcome variable cost using predictor bmi
+lmOut3 <- lm(formula = cost ~ bmi, data = data)
+summary(lmOut3)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictor smoker
+lmOut4 <- lm(formula = cost ~ smoker, data = data)
+summary(lmOut4)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictor age
+lmOut5 <- lm(formula = cost ~ age, data = data)
+summary(lmOut5)
+```
+
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi & age
+lmOut6 <- lm(formula = cost ~ bmi + age, data = data)
+summary(lmOut6)
+
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi & smoker
+lmOut7 <- lm(formula = cost ~ bmi + smoker, data = data)
+summary(lmOut7)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors smoker and age
+lmOut8 <- lm(formula = cost ~ age + smoker, data = data)
+summary(lmOut8)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi, smoker and age
+lmOut9 <- lm(formula = cost ~ bmi + age + smoker, data = data)
+summary(lmOut9)
+```
+
+
+
+

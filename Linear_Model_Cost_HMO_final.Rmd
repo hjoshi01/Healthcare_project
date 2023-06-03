@@ -1,0 +1,195 @@
+---
+title: "Linear_Model"
+author: "Shweta Rane"
+date: "2022-11-27"
+---
+
+```{r}
+#This file contains HMO data with outcome variable "expensive" derived using K-means
+library(tidyverse)
+file <- ("https://intro-datascience.s3.us-east-2.amazonaws.com/HMO_data.csv")
+data <- read_csv(file)
+head(data)
+```
+
+```{r}
+data <- as.data.frame(data)
+```
+
+```{r}
+#install.packages("imputeTS")
+library(imputeTS)
+data$bmi <- na_interpolation(data$bmi)
+#View(HMO_data)
+sum(is.na(data$bmi))
+
+data$hypertension <- na_interpolation(data$hypertension)
+#View(HMO_data)
+sum(is.na(data$hypertension))
+```
+
+```{r}
+str(data)
+```
+```{r}
+data_new <- data.frame(id=as.numeric(data$X),
+                     age=as.numeric(data$age),
+                     bmi=as.numeric(data$bmi),
+                     children=as.numeric(data$children),
+                     smoker=as.numeric(ifelse(data$smoker == 'yes',1,0)),
+                     location=as.numeric(unclass(as.factor(data$location))),
+                     location_type=as.numeric(ifelse(data$location_type == 'Country',1,0)),
+                     education_level=as.numeric(unclass(as.factor(data$education_level))),
+                     yearly_physical=as.numeric(ifelse(data$yearly_physical == 'Yes',1,0)),
+                     exercise=as.numeric(ifelse(data$exercise == 'Active',1,0)),
+                     married=as.numeric(ifelse(data$married == 'Married',1,0)),
+                     hypertension = as.numeric(data$hypertension),
+                     gender=as.numeric(ifelse(data$gender == 'male',1,0)),
+                     cost=as.numeric(data$cost))
+                     
+                     
+```
+
+```{r}
+data_new
+head(data_new)
+```
+```{r}
+# install.packages('corrplot')
+library(corrplot)
+corrmatrix <- cor(data_new)
+
+corrplot(cor(corrmatrix),addCoef.col="black",number.cex=0.30)
+```
+```{r}
+plot_1 <- ggplot(data=data_new) + aes(y=cost, x=age) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)  #giving a line of best fit to the scatter plot
+
+plot_2 <- ggplot(data=data_new) + aes(y=cost, x=bmi) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)
+
+
+plot_3 <- ggplot(data=data_new) + aes(y=cost, x=children) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)
+
+plot_4 <- ggplot(data=data_new) + aes(y=cost, x=hypertension) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)
+
+plot_5 <- ggplot(data=data_new) + aes(y=cost, x=smoker) + geom_point() + #making a visualization
+geom_smooth(method="lm", se=FALSE)
+
+
+plot_1
+plot_2
+plot_3
+plot_4
+plot_5
+```
+
+```{r}
+data_new[c('age','bmi','children','location','education_level','cost')] <- 
+  scale(data_new[c('age','bmi','children','location','education_level','cost')])
+```
+
+
+```{r}
+head(data_new)
+```
+```{r}
+data_new2 <- data_new[c('age','bmi', 'smoker', 'cost' , 'children', 'id', 'location', 'location_type', 'yearly_physical', 'education_level', 'exercise', 'married', 'hypertension', 'gender')]
+head(data_new2)
+```
+
+```{r}
+#Applied linear regression on outcome variable cost using predictor bmi
+lmOut1 <- lm(formula = cost ~ bmi, data = data_new2)
+summary(lmOut1)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictor smoker
+lmOut2 <- lm(formula = cost ~ smoker, data = data_new2)
+summary(lmOut2)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictor age
+lmOut3 <- lm(formula = cost ~ age, data = data_new2)
+summary(lmOut3)
+```
+
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi & age
+lmOut4 <- lm(formula = cost ~ bmi + age, data = data_new2)
+summary(lmOut4)
+
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi & smoker
+lmOut5 <- lm(formula = cost ~ bmi + smoker, data = data_new2)
+summary(lmOut5)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors smoker and age
+lmOut6 <- lm(formula = cost ~ age + smoker, data = data_new2)
+summary(lmOut6)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi, smoker and age
+lmOut7 <- lm(formula = cost ~ bmi + age + smoker, data = data_new2)
+summary(lmOut7)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi, smoker, age, children, location, location_type, education_level, exercise, married, hypertension, gender, yearly_physical, id
+lmOut8 <- lm(formula = cost ~ bmi + age + smoker + children +location + location_type + exercise + married + hypertension + gender + education_level + yearly_physical , data = data_new2)
+summary(lmOut8)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi, smoker, age, children,exercise, hypertension 
+lmOut9 <- lm(formula = cost ~ bmi + age + smoker + children + exercise  + hypertension , data = data_new2)
+summary(lmOut9)
+```
+
+```{r}
+#Creating a dataframe using the suggested values
+predDF <- data.frame(age = 0.5723449, bmi=0.4422956, smoker=0)
+predict(lmOut7, predDF)
+```
+We tried applying linear model using various parameters and combinations using  bmi, smoker, age, children, location, location_type, education_level, exercise, married, hypertension, gender, yearly_physical, id to predict cost. By adding the independent variable i.e bmi, age, smoker, children, exercise and hypertension we are increasing the overall prediction capacity of our model which is 57%.
+```{r}
+#upload the test file in the testdata below
+
+testdata<- read.csv('C:\\Users\\Aruneema\\Desktop\\MSBA\\IST 687\\Project\\HMO_TEST_data_sample.csv')
+#Creating a dataframe using the suggested values
+#predDF <- data.frame(testdata)
+
+predDF <- data.frame(id=as.numeric(testdata$X),
+                     age=as.numeric(testdata$age),
+                     bmi=as.numeric(testdata$bmi),
+                     children=as.numeric(testdata$children),
+                     smoker=as.numeric(ifelse(testdata$smoker == 'yes',1,0)),
+                     location=as.numeric(unclass(as.factor(testdata$location))),
+                     location_type=as.numeric(ifelse(testdata$location_type == 'Country',1,0)),
+                     education_level=as.numeric(unclass(as.factor(testdata$education_level))),
+                     yearly_physical=as.numeric(ifelse(testdata$yearly_physical == 'Yes',1,0)),
+                     exercise=as.numeric(ifelse(testdata$exercise == 'Active',1,0)),
+                     married=as.numeric(ifelse(testdata$married == 'Married',1,0)),
+                     hypertension = as.numeric(testdata$hypertension),
+                     gender=as.numeric(ifelse(testdata$gender == 'male',1,0))
+                     )
+
+predDF 
+
+```
+
+```{r}
+#prediction
+predict(lmOut9, predDF)
+
+```
+
+```{r}
+
+```
+
+
+
+

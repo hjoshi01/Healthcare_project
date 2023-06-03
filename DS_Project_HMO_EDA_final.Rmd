@@ -1,0 +1,313 @@
+---
+title: "HMO_Data_Cleaning"
+author: "Aruneema"
+date: "2022-11-14"
+output: html_document
+---
+
+
+```{r}
+#install.packages("tidyverse")
+library(tidyverse)
+file <- ("https://intro-datascience.s3.us-east-2.amazonaws.com/HMO_data.csv")
+HMO_data <- read_csv(file)
+#View(HMO_data)
+```
+
+
+```{r}
+#DATA CLEANING
+sum(is.na(HMO_data))
+dim(HMO_data)
+summary(HMO_data)
+```
+
+
+```{r}
+# IMPUTATION
+#install.packages("imputeTS")
+library(imputeTS)
+HMO_data$bmi <- na.interpolation(HMO_data$bmi)
+#View(HMO_data)
+sum(is.na(HMO_data$bmi))
+
+HMO_data$hypertension <- na.interpolation(HMO_data$hypertension)
+#View(HMO_data)
+sum(is.na(HMO_data$hypertension))
+```
+```{r}
+#HISTOGRAMS AND BAR PLOTS
+
+#UNIVARIATE ANALYSIS
+hist(HMO_data$age,labels = paste0(round(hist(HMO_data$age, plot = FALSE)$counts / length(HMO_data$age) * 100, 1), "%"))
+```
+```{r}
+#the dataset has more proportion of people in their 20s (13.2%) followed by people in their late 40s to late 50s (10.8 and 10.7% respectively)
+# and their are very few people above 65
+```
+
+
+```{r}
+table1<- table(HMO_data$gender)
+gender_prop<- prop.table(table1)
+gender_prop<- data.frame(gender_prop)
+gender_prop
+```
+```{r}
+#the proportion of male is slightly more than females in the given sample```
+```
+
+```{r}
+hist(HMO_data$cost,labels = paste0(round(hist(HMO_data$cost, plot = FALSE)$counts / length(HMO_data$cost) * 100, 1), "%"))
+```
+```{r}
+#the cost for most of the people lie below 10000 (84.6%). Very few proportion of people have cost above 10000
+```
+
+
+```{r}
+library(scales)
+HMO_data %>% 
+  count(gender) %>% 
+  mutate(perc = n / nrow(HMO_data)) -> tips2
+
+tips2
+
+ggplot(tips2, aes(x = gender, y = perc,fill=gender)) + geom_bar(stat = "identity") +  geom_text(aes( label = scales::percent(..prop..),
+                   y= ..prop.. ), stat= "count", vjust = -.5)
+```
+```{r}
+#BIVARIATE ANALYSIS
+plot_1 <- ggplot(data=HMO_data) + aes(x=age,y=cost) + geom_point() + geom_smooth(method="lm", se=FALSE)
+
+plot_1 <- plot_1 + ggtitle("Scatterplot of cost vs age")
+
+plot_1
+```
+```{r}
+#the cost of people is increasing slightly with increase in age
+```
+
+```{r}
+ggplot(HMO_data, aes(x = HMO_data$bmi)) + geom_histogram(aes(fill =HMO_data$location))
+ggplot(HMO_data, aes(x = HMO_data$bmi)) + geom_histogram(aes(fill =HMO_data$location_type))
+ggplot(HMO_data, aes(x = HMO_data$cost)) + geom_histogram(aes(fill =HMO_data$location))
+ggplot(HMO_data, aes(x = HMO_data$cost)) + geom_histogram(aes(fill =HMO_data$location_type))
+ggplot(HMO_data, aes(x = HMO_data$cost)) + geom_histogram(aes(fill =HMO_data$smoker))
+ggplot(HMO_data, aes(x = HMO_data$bmi)) + geom_histogram(aes(fill =HMO_data$smoker))
+ggplot(HMO_data, aes(x = HMO_data$cost)) + geom_histogram(aes(fill =HMO_data$education_level))
+ggplot(HMO_data, aes(x = HMO_data$bmi)) + geom_histogram(aes(fill =HMO_data$education_level))
+
+```
+
+
+```{r}
+ggplot(HMO_data, aes(x = HMO_data$children)) + geom_bar(aes(fill =HMO_data$gender),position = "dodge")
+ggplot(HMO_data, aes(x = HMO_data$exercise)) + geom_bar(aes(fill =HMO_data$gender),position = "dodge")
+ggplot(HMO_data, aes(x = HMO_data$smoker)) + geom_bar(aes(fill =HMO_data$gender),position = "dodge")
+ggplot(HMO_data, aes(x = HMO_data$education_level)) + geom_bar(aes(fill =HMO_data$gender),position = "dodge")
+ggplot(HMO_data, aes(x = HMO_data$location_type)) + geom_bar(aes(fill =HMO_data$gender),position = "dodge")
+ggplot(HMO_data, aes(x = HMO_data$smoker)) + geom_bar(aes(fill =HMO_data$gender),position = "dodge")
+```
+```{r}
+
+ggplot(HMO_data, aes(x = HMO_data$smoker, y=HMO_data$cost)) + geom_histogram(aes(fill =HMO_data$gender))
+barplot(cost ~ gender,data=HMO_data)
+boxplot(cost ~ smoker,data=HMO_data)
+boxplot(cost ~ location,data=HMO_data)
+boxplot(cost ~ location_type,data=HMO_data)
+boxplot(cost ~ education_level,data=HMO_data)
+```
+
+
+```{r}
+#CATEGORICAL EDA- TABLES
+cost_exercise<- data.frame(HMO_data$exercise,HMO_data$cost,HMO_data$location)
+active_cost<- cost_exercise[which(cost_exercise$HMO_data.exercise=='Active'),]
+active_cost
+aggregate(HMO_data.cost~ HMO_data.location, active_cost, mean)
+```
+```{r}
+#among people who are exercising, MASSACHUSETTS has the most costly patients while CONNECTICUT has less costly patients
+```
+
+```{r}
+notactive_cost<- cost_exercise[which(cost_exercise$HMO_data.exercise=='Not-Active'),]
+notactive_cost
+aggregate(HMO_data.cost~ HMO_data.location, notactive_cost, mean)
+```
+```{r}
+#among people who are not exercising, NEW YORK has the most costly patients while MARYLAND has less costly patients
+```
+
+```{r}
+cost <- ggplot(HMO_data, aes(y=cost)) + 
+   geom_boxplot(outlier.colour="red", outlier.shape=8,
+                outlier.size=4)
+cost
+
+```
+
+
+```{r}
+boxplot(cost ~ gender,data=HMO_data)
+boxplot(cost ~ smoker,data=HMO_data)
+boxplot(cost ~ location,data=HMO_data)
+boxplot(cost ~ location_type,data=HMO_data)
+boxplot(cost ~ education_level,data=HMO_data)
+
+```
+
+
+```{r}
+boxplot(bmi ~ gender,data=HMO_data)
+boxplot(bmi ~ smoker,data=HMO_data)
+boxplot(bmi ~ location,data=HMO_data)
+boxplot(bmi ~ location_type,data=HMO_data)
+boxplot(bmi ~ education_level,data=HMO_data)
+```
+
+```{r}
+cost_bmi<- data.frame(HMO_data$bmi,HMO_data$cost,HMO_data$location)
+max_bmi_cost<- cost_bmi[which.max(cost_bmi$HMO_data.bmi),]
+min_bmi_cost<- cost_bmi[which.min(cost_bmi$HMO_data.bmi),]
+max_bmi_cost
+min_bmi_cost 
+
+#then max bmi is 53.13 with the cost of 331 in pennsylvania
+#then min bmi is 15.96 with the cost of 213 in pennsylvania
+```
+
+
+```{r}
+library(dplyr)
+
+location_avg_cost<- HMO_data %>% 
+  group_by(HMO_data$location) %>% 
+  summarize(mean_age = mean(age), mean_cost = mean(cost))
+
+location_avg_cost<-data.frame(location_avg_cost)
+location_avg_cost<- location_avg_cost[order(location_avg_cost$mean_cost),]
+location_avg_cost
+
+```
+
+```{r}
+#the mean age of pateints in the sample states is around 38, with MASSACHUSETTS having the oldest mean age
+
+#new york is having the highest mean cost, while CONNECTICUT has the least mean cost
+```
+
+```{r}
+cost_smoker<- data.frame(HMO_data$smoker,HMO_data$cost,HMO_data$location)
+smoker_cost1<- cost_smoker[which(cost_smoker$HMO_data.smoker=='yes'),]
+smoker_cost1
+aggregate(HMO_data.cost~ HMO_data.location, smoker_cost1, mean)
+
+```
+```{r}
+# among people who smoke, the state of NEW YORK has the most cost, while MARYLAND has less cost
+```
+
+```{r}
+cost_smoker<- data.frame(HMO_data$smoker,HMO_data$cost,HMO_data$location)
+smoker_cost2<- cost_smoker[which(cost_smoker$HMO_data.smoker=='no'),]
+smoker_cost2
+aggregate(HMO_data.cost~ HMO_data.location, smoker_cost2, mean)
+```
+```{r}
+# among people who do not smoke, the state of NEW YORK has the most cost, while CONNECTICUT has less cost
+```
+
+
+```{r}
+#MAPS
+
+library(ggplot2); 
+library(maps); 
+library(ggmap); 
+library(mapproj)
+us <- map_data("state") # fetches the state data column from the dataframe
+
+location_avg_cost$HMO_data.location <- tolower(location_avg_cost$HMO_data.location)
+MyNewPlot <- merge(location_avg_cost,us,by.x="HMO_data.location",by.y="region")
+MyNewPlot <- MyNewPlot %>% arrange(order)
+
+c <- ggplot(MyNewPlot)
+c <- c + aes(x=long,y=lat,group = group) + geom_polygon(aes(fill= mean_cost), color = "black")
+c <- c + expand_limits(x=MyNewPlot$long,y=MyNewPlot$lat) + coord_map(projection = "mercator")
+c <- c+ scale_fill_gradient(low='white', high='blue')
+c
+```
+
+
+```{r}
+#table(list(HMO_data$location))
+c2 <- ggplot(MyNewPlot)
+c2 <- c2 + aes(x=long,y=lat,group = group) + geom_polygon(aes(fill= mean_age), color = "black")
+c2 <- c2 + expand_limits(x=MyNewPlot$long,y=MyNewPlot$lat) + coord_map(projection = "mercator")
+c2 <- c2+ scale_fill_gradient(low='white', high='blue')
+c2
+
+#the map shows the distribution of age in the seven states of the sample. 
+
+```
+
+
+
+
+```{r}
+#ADDING EXPENSIVE COLUMN
+
+HMO_data2 <- HMO_data
+HMO_data2$expensive <- as.factor(HMO_data$cost>4775)
+HMO_data2
+
+#0-> not expensive
+#1 -> expensive
+
+```
+
+```{r}
+#EDA with expensive column
+
+counts<- table(HMO_data2$expensive)
+
+barplot(counts, main="ExpensiveDistribution",
+   xlab="Expensive")
+
+```
+```{r}
+
+ggplot(HMO_data2, aes(x = HMO_data2$children)) + geom_bar(aes(fill =HMO_data2$expensive),position = "dodge")
+
+ggplot(HMO_data2, aes(x = HMO_data2$education_level)) + geom_bar(aes(fill =HMO_data2$expensive),position = "dodge")
+
+ggplot(HMO_data2, aes(x = HMO_data2$smoker)) + geom_bar(aes(fill =HMO_data2$expensive),position = "dodge")
+
+ggplot(HMO_data2, aes(x = HMO_data2$location)) + geom_bar(aes(fill =HMO_data2$expensive),position = "dodge")
+
+ggplot(HMO_data2, aes(x = HMO_data2$exercise)) + geom_bar(aes(fill =HMO_data2$expensive),position = "dodge")
+
+ggplot(HMO_data2, aes(x = HMO_data2$gender)) + geom_bar(aes(fill =HMO_data2$expensive),position = "dodge")
+
+ggplot(HMO_data2, aes(x = HMO_data2$married)) + geom_bar(aes(fill =HMO_data2$expensive),position = "dodge")
+
+
+```
+```{r}
+ggplot(HMO_data2, aes(x = HMO_data2$bmi)) + geom_histogram(aes(fill =HMO_data2$expensive))
+
+ggplot(HMO_data2, aes(x = HMO_data2$age)) + geom_histogram(aes(fill =HMO_data2$expensive))
+
+
+```
+```{r}
+boxplot(age ~ expensive,data=HMO_data2)
+boxplot(bmi ~ expensive,data=HMO_data2)
+```
+
+
+
+
+

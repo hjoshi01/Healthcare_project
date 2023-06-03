@@ -1,0 +1,153 @@
+---
+title: "svm_project"
+author: "Danila Rozhevskii"
+date: "2022-11-17"
+---
+
+```{r}
+library(tidyverse)
+
+```
+
+```{r}
+data <- read.csv("HMO_data_clean.csv")
+```
+
+```{r}
+data <- as.data.frame(data)
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+table(data$gender)
+```
+```{r}
+unclass(as.factor(data$smoker))
+```
+
+```{r}
+ifelse(data$smoker == "yes", 1, 0)
+```
+
+```{r}
+data_new <- data.frame(id=as.numeric(data$X),
+                     age=as.numeric(data$age),
+                     bmi=as.numeric(data$bmi),
+                     children=as.numeric(data$children),
+                     smoker=as.numeric(ifelse(data$smoker == 'yes',1,0)),
+                     location=as.numeric(unclass(as.factor(data$location))),
+                     location_type=as.numeric(ifelse(data$location_type == 'Country',1,0)),
+                     education_level=as.numeric(unclass(as.factor(data$education_level))),
+                     yearly_physical=as.numeric(ifelse(data$yearly_physical == 'Yes',1,0)),
+                     exercise=as.numeric(ifelse(data$exercise == 'Active',1,0)),
+                     married=as.numeric(ifelse(data$married == 'Married',1,0)),
+                     hypertension = as.numeric(data$hypertension),
+                     gender=as.numeric(ifelse(data$gender == 'male',1,0)),
+                     cost=as.numeric(data$cost))
+                     
+                     
+```
+
+```{r}
+head(data_new)
+```
+
+```{r}
+data_new[c('age','bmi','children','location','education_level','cost')] <- 
+  scale(data_new[c('age','bmi','children','location','education_level','cost')])
+```
+
+
+```{r}
+head(data_new)
+```
+
+```{r}
+data_new2 <- data_new[c('age','bmi', 'smoker','cost')]
+```
+
+```{r}
+library(cluster)    # clustering algorithms
+library(factoextra) # clustering algorithms & visualization
+```
+
+
+```{r}
+kmodel <- kmeans(data_new2, centers = 2, nstart = 25)
+str(kmodel)
+```
+
+```{r}
+kmodel
+```
+
+```{r}
+fviz_cluster(kmodel, data = data_new)
+```
+
+```{r}
+data_new %>%
+  mutate(Cluster = kmodel$cluster) %>%
+  group_by(Cluster) %>%
+  summarise_all("mean")
+```
+```{r}
+data_new['cluster'] <- kmodel$cluster
+```
+
+```{r}
+head(data_new)
+```
+
+```{r}
+data['cluster'] <- data_new$cluster
+```
+
+```{r}
+data %>%
+  group_by(cluster) %>%
+  summarise_all("mean")
+```
+
+```{r}
+data['expensive'] <- ifelse(data$cluster == 1, "yes", "no")
+```
+
+```{r}
+head(data)
+```
+
+```{r}
+ggplot(data, aes(x=age, y=cost)) +  geom_point()
+```
+
+```{r}
+ggplot(data) + 
+  geom_point(mapping = aes(x = age, y = cost, color = expensive))
+```
+
+```{r}
+ggplot(data) + 
+  geom_bar(mapping = aes(x = expensive, fill = smoker))
+```
+
+```{r}
+ggplot(data) + 
+  geom_bar(mapping = aes(x = education_level, fill = expensive), position = "dodge")
+```
+
+```{r}
+ggplot(data) + 
+  geom_bar(mapping = aes(x = location, fill = expensive), position = "dodge")
+```
+
+```{r}
+ggplot(data) + 
+  geom_bar(mapping = aes(x = location, fill = expensive), position = "dodge")
+```
+
+
+

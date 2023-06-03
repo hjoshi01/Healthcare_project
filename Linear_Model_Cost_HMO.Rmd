@@ -1,0 +1,114 @@
+---
+title: "Linear_Model"
+author: "Shweta Rane"
+date: "2022-11-27"
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+#This file contains HMO data with outcome variable "expensive" derived using K-means
+data <- read.csv("HMO_labeled_data.csv")
+```
+
+```{r}
+data <- as.data.frame(data)
+```
+
+```{r}
+str(data)
+```
+```{r}
+data_new <- data.frame(id=as.numeric(data$X),
+                     age=as.numeric(data$age),
+                     bmi=as.numeric(data$bmi),
+                     children=as.numeric(data$children),
+                     smoker=as.numeric(ifelse(data$smoker == 'yes',1,0)),
+                     location=as.numeric(unclass(as.factor(data$location))),
+                     location_type=as.numeric(ifelse(data$location_type == 'Country',1,0)),
+                     education_level=as.numeric(unclass(as.factor(data$education_level))),
+                     yearly_physical=as.numeric(ifelse(data$yearly_physical == 'Yes',1,0)),
+                     exercise=as.numeric(ifelse(data$exercise == 'Active',1,0)),
+                     married=as.numeric(ifelse(data$married == 'Married',1,0)),
+                     hypertension = as.numeric(data$hypertension),
+                     gender=as.numeric(ifelse(data$gender == 'male',1,0)),
+                     cost=as.numeric(data$cost))
+                     
+                     
+```
+
+```{r}
+head(data_new)
+```
+```{r}
+data_new[c('age','bmi','children','location','education_level','cost')] <- 
+  scale(data_new[c('age','bmi','children','location','education_level','cost')])
+```
+
+
+```{r}
+head(data_new)
+```
+```{r}
+data_new2 <- data_new[c('age','bmi', 'smoker', 'cost' , 'children', 'id', 'location', 'location_type', 'yearly_physical', 'education_level', 'exercise', 'married', 'hypertension', 'gender')]
+head(data_new2)
+```
+
+```{r}
+#Applied linear regression on outcome variable cost using predictor bmi
+lmOut1 <- lm(formula = cost ~ bmi, data = data_new2)
+summary(lmOut1)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictor smoker
+lmOut2 <- lm(formula = cost ~ smoker, data = data_new2)
+summary(lmOut2)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictor age
+lmOut3 <- lm(formula = cost ~ age, data = data_new2)
+summary(lmOut3)
+```
+
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi & age
+lmOut4 <- lm(formula = cost ~ bmi + age, data = data_new2)
+summary(lmOut4)
+
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi & smoker
+lmOut5 <- lm(formula = cost ~ bmi + smoker, data = data_new2)
+summary(lmOut5)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors smoker and age
+lmOut6 <- lm(formula = cost ~ age + smoker, data = data_new2)
+summary(lmOut6)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi, smoker and age
+lmOut7 <- lm(formula = cost ~ bmi + age + smoker, data = data_new2)
+summary(lmOut7)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi, smoker, age, children, location, location_type, education_level, exercise, married, hypertension, gender, yearly_physical, id
+lmOut8 <- lm(formula = cost ~ bmi + age + smoker + children +location + location_type + exercise + married + hypertension + gender + education_level + yearly_physical , data = data_new2)
+summary(lmOut8)
+```
+```{r}
+#Applied linear regression on outcome variable cost using predictors bmi, smoker, age, children,exercise, hypertension 
+lmOut9 <- lm(formula = cost ~ bmi + age + smoker + children + exercise  + hypertension , data = data_new2)
+summary(lmOut9)
+```
+
+```{r}
+#Creating a dataframe using the suggested values
+predDF <- data.frame(age = 0.5723449, bmi=0.4422956, smoker=0)
+predict(lmOut7, predDF)
+```
+We tried applying linear model using various parameters and combinations using  bmi, smoker, age, children, location, location_type, education_level, exercise, married, hypertension, gender, yearly_physical, id to predict cost. By adding the independent variable i.e bmi, age, smoker, children, exercise and hypertension we are increasing the overall prediction capacity of our model which is 57%.
+
+

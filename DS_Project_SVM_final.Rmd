@@ -1,0 +1,233 @@
+---
+title: "HMO_Data_Cleaning"
+author: "Aruneema"
+date: "2022-11-14"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("tidyverse")
+library(tidyverse)
+file <- ("https://intro-datascience.s3.us-east-2.amazonaws.com/HMO_data.csv")
+HMO_data <- read_csv(file)
+View(HMO_data)
+```
+```{r}
+#Note to self- only Kernel Density Classification can handle the categorical variables in theory, while kNN and SVM are unable to be applied directly since they are based on the Euclidean distances. 
+
+#hence encode the values
+```
+
+
+```{r}
+#Fetching the non-scaled encoded dataset
+library(caret)
+library('tidyverse')
+#install.packages("imputeTS")
+library(imputeTS)
+
+HMO_data$bmi <- na.interpolation(HMO_data$bmi)
+#View(HMO_data)
+sum(is.na(HMO_data$bmi))
+
+HMO_data$hypertension <- na.interpolation(HMO_data$hypertension)
+#View(HMO_data)
+sum(is.na(HMO_data$hypertension))
+
+
+```
+```{r}
+HMO_num<-data.frame(HMO_data)
+head(HMO_num)
+```
+```{r}
+HMO_num <- data.frame(X=as.integer(HMO_num$X),
+                     age=as.integer(HMO_num$age),
+                     bmi=as.integer(HMO_num$bmi),
+                     children=as.integer(HMO_num$children),
+                     smoker=as.integer(ifelse(HMO_num$smoker == 'yes',1,0)),
+                     location=as.integer(unclass(as.factor(HMO_num$location))),
+                     location_type=as.integer(ifelse(HMO_num$location_type == 'Country',1,0)),
+                     education_level=as.integer(unclass(as.factor(HMO_num$education_level))),
+                     yearly_physical=as.integer(ifelse(HMO_num$yearly_physical == 'Yes',1,0)),
+                     exercise=as.integer(ifelse(HMO_num$exercise == 'Active',1,0)),
+                     married=as.integer(ifelse(HMO_num$married == 'Married',1,0)),
+                     hypertension = as.integer(HMO_num$hypertension),
+                     gender=as.integer(ifelse(HMO_num$gender == 'male',1,0)),
+                     cost=as.integer(HMO_num$cost))
+```
+
+```{r}
+str(HMO_num)
+```
+
+
+```{r}
+#making expensive column
+HMO_num$expensive <- as.factor(HMO_num$cost>4773)
+HMO_num
+
+```
+```{r}
+HMO_num = subset(HMO_num, select = -c(X,cost) )
+```
+
+```{r}
+#creating trainlist
+trainList<-createDataPartition(y=HMO_num$expensive,p=.60,list=FALSE)
+
+```
+
+
+```{r}
+str(trainList) 
+
+```
+
+
+```{r}
+#making trainset
+
+trainSet<- HMO_num[trainList,]
+trainSet
+```
+
+```{r}
+#testset
+testset<- HMO_num[-trainList,]
+
+```
+
+```{r}
+#using ksvm
+library(kernlab)
+set.seed(111)
+SVM_Model<-ksvm(expensive ~.,data=trainSet, C=5, cross=5, prob.model=TRUE)
+
+SVM_Model
+```
+```{r}
+#output of test set
+predOut_test <- predict(SVM_Model, newdata = testset,type= "response")
+
+```
+
+```{r}
+confusionMatrix(predOut_test, testset$expensive)
+#accuracy is 86.54% with sensitivity of 97.27%
+```
+```{r}
+
+#using SVM Radial
+library(caret)
+
+svm_radial.model <- train(expensive ~ ., data = trainSet,
+method = "svmRadial",
+trControl=trainControl(method ="none"),
+preProcess = c("center", "scale"))
+
+
+svm_radial.model
+
+```
+
+
+```{r}
+predOut_test_svm_radial <- predict(svm_radial.model, newdata = testset)
+
+```
+
+```{r}
+confusionMatrix(predOut_test_svm_radial, testset$expensive)
+#accuracy is 84.70% sensitivity is 95.16%
+```
+
+```{r}
+#k-fold validation
+trctrl <- trainControl(method="repeatedcv",number=10)
+svm.model.kfold <- train(expensive ~ .,data = trainSet,
+method = "svmRadial",trControl=trctrl,preProcess = c("center","scale"))
+
+svm.model.kfold
+
+```
+```{r}
+trctrl <- trainControl(method="repeatedcv",number=10)
+svm.model.kfold_2 <- train(expensive ~ bmi + age + smoker + children + exercise  + hypertension,data = trainSet,
+method = "svmRadial",trControl=trctrl,preProcess = c("center","scale"))
+
+svm.model.kfold_2
+```
+
+```{r}
+predictValues <- predict(svm.model.kfold_2,
+newdata=testset)
+confusionMatrix(predictValues, testset$expensive)
+
+#accuracy is 87.25% with sensitivity of 97.42%
+```
+
+```{r}
+#saving the model
+SVM_model <- svm.model.kfold_2
+save(SVM_model, file = "svm.model.kfold_2.rda")
+```
+
+```{r}
+sample_testdata <- read_csv("C:\\Users\\Aruneema\\Desktop\\MSBA\\IST 687\\Project\\HMO_TEST_data_sample.csv")
+
+head(sample_testdata)
+```
+```{r}
+sample_testdata<- data.frame(X=as.numeric(sample_testdata$X),
+                     age=as.numeric(sample_testdata$age),
+                     bmi=as.numeric(sample_testdata$bmi),
+                     children=as.numeric(sample_testdata$children),
+                     smoker=as.numeric(ifelse(sample_testdata$smoker == 'yes',1,0)),
+                     location=as.numeric(unclass(as.factor(sample_testdata$location))),
+                     location_type=as.numeric(ifelse(sample_testdata$location_type == 'Country',1,0)),
+                     education_level=as.numeric(unclass(as.factor(sample_testdata$education_level))),
+                     yearly_physical=as.numeric(ifelse(sample_testdata$yearly_physical == 'Yes',1,0)),
+                     exercise=as.numeric(ifelse(sample_testdata$exercise == 'Active',1,0)),
+                     married=as.numeric(ifelse(sample_testdata$married == 'Married',1,0)),
+                     hypertension = as.numeric(sample_testdata$hypertension),
+                     gender=as.numeric(ifelse(sample_testdata$gender == 'male',1,0)))
+```
+
+
+```{r}
+
+predictValues_sample <- predict(svm.model.kfold_2,
+newdata=sample_testdata)
+
+p=as.factor(predictValues_sample)
+p
+
+```
+
+```{r}
+sample_solution<- read_csv("C:\\Users\\Aruneema\\Desktop\\MSBA\\IST 687\\Project\\HMO_TEST_data_sample_solution (1).csv")
+
+a<-as.factor(sample_solution$expensive)
+a
+
+
+```
+
+```{r}
+confusionMatrix(p, a)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
